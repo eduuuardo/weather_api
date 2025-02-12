@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clima de Ciudades</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+        input { width: 300px; padding: 10px; font-size: 16px; }
+        #suggestions { max-width: 320px; margin: 0 auto; background: #f8f8f8; border: 1px solid #ddd; position: absolute; z-index: 1000; }
+        .suggestion-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #ddd; }
+        .suggestion-item:hover { background: #ddd; }
+        #weather-info { margin-top: 20px; padding: 20px; background: #e3f2fd; display: none; border-radius: 8px; }
+    </style>
+</head>
+<body>
+
+    <h1>Consulta el Clima</h1>
+
+    <input type="text" id="city-input" placeholder="Escribe una ciudad..." autocomplete="off">
+    <div id="suggestions"></div>
+
+    <div id="weather-info">
+        <h2 id="city-name"></h2>
+        <p id="coordinates"></p>
+        <h3>Pronóstico de los próximos 7 días</h3>
+        <ul id="forecast-list"></ul>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const cityInput = document.getElementById("city-input");
+            const suggestionsDiv = document.getElementById("suggestions");
+            const weatherInfo = document.getElementById("weather-info");
+            const cityName = document.getElementById("city-name");
+            const coordinates = document.getElementById("coordinates");
+            const forecastList = document.getElementById("forecast-list");
+
+            // Obtener sugerencias de ciudades en tiempo real
+            cityInput.addEventListener("input", async () => {
+                const query = cityInput.value.trim();
+                if (query.length < 2) {
+                    suggestionsDiv.innerHTML = "";
+                    return;
+                }
+
+                const response = await fetch(`https://search.reservamos.mx/api/v2/places?q=${query}`);
+                const cities = await response.json();
+                const citySuggestions = cities.filter(c => c.result_type === "city");
+
+                suggestionsDiv.innerHTML = citySuggestions.map(city =>
+                    `<div class="suggestion-item" data-name="${city.city_name}">${city.city_name}, ${city.state}</div>`
+                ).join("");
+
+                document.querySelectorAll(".suggestion-item").forEach(item => {
+                    item.addEventListener("click", async () => {
+                        cityInput.value = item.dataset.name;
+                        suggestionsDiv.innerHTML = "";
+
+                        // Consultar clima de la ciudad 
+                        const weatherResponse = await fetch(`/weather?city=${item.dataset.name}`);
+                        const weatherData = await weatherResponse.json();
+
+                        if (weatherData.error) {
+                            alert("No se pudo obtener el clima.");
+                            return;
+                        }
+
+                        // Mostrar datos
+                        const city = weatherData.results[0];
+                        cityName.innerText = `${city.city}, ${city.state}, ${city.country}`;
+                        coordinates.innerText = `Lat: ${city.coordinates.lat}, Lon: ${city.coordinates.lon}`;
+                        forecastList.innerHTML = city.forecast.map(day =>
+                            `<li><strong>${day.date}:</strong> Min: ${day.min_temp}°C, Max: ${day.max_temp}°C</li>`
+                        ).join("");
+
+                        weatherInfo.style.display = "block";
+                    });
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>

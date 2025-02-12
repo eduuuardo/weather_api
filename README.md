@@ -25,12 +25,12 @@ git clone https://github.com/TU_USUARIO/weather_api.git
 cd weather_api
 ```
 
-### **2️Instala las dependencias**
+### **Instala las dependencias**
 ```sh
 bundle install
 ```
 
-### ** Prende el servidor**
+### **Prende el servidor**
 ```sh
 bin/rails server
 ```
